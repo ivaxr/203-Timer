@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Pokémon League Timer</title>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      background: #ffffff;
+      color: #000000;
+
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      height: 100vh;
+      place-items: center;
+    }
+
+    /* Header */
+    #header {
+      margin-top: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    #logo {
+      max-width: 180px;
+      margin-bottom: 2px;
+    }
+
+    #leagueTitle {
+      font-size: 1.7rem;
+      font-weight: 800;
+      letter-spacing: 0.03em;
+    }
+
+    .divider {
+      margin-top: 8px;
+      width: 82%;
+      height: 1px;
+      background: #d4d4d4;
+    }
+
+    /* TIMER stays centered in grid middle row */
+    #timerBox {
+      padding: 26px 46px;
+      border: 2px solid #000;
+      border-radius: 18px;
+      box-shadow: 0 10px 26px rgba(0,0,0,0.08);
+
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    #pokeballIcon {
+      width: 44px;
+    }
+
+    /* Larger timer, more presence */
+    #timer {
+      font-size: 10.6rem;
+      font-weight: 900;
+      letter-spacing: 0.08em;
+    }
+
+    #message {
+      font-size: 3rem;
+      font-weight: bold;
+      color: #2e7d32;
+      opacity: 0;
+      transition: opacity .2s ease;
+    }
+
+    /* Controls — bottom panel, small + neat */
+    #controlsPanel {
+      margin-bottom: 8px;
+
+      padding: 10px 18px 12px;
+      border-radius: 14px;
+      border: 1px solid #cccccc;
+      background: #fafafa;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.06);
+
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+
+      max-width: 820px;
+      width: 88%;
+    }
+
+    #modeControls,
+    #mainControls {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+
+    #modifierSection {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      width: 100%;
+    }
+
+    #modifierLabel {
+      font-size: 0.85rem;
+      text-transform: uppercase;
+      letter-spacing: 0.12em;
+      color: #666;
+    }
+
+    #modifierControls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 6px;
+      width: 100%;
+      max-width: 480px;
+      justify-items: center;
+    }
+
+    button {
+      border-radius: 8px;
+      border: 2px solid #000;
+      background: #f4f4f4;
+      cursor: pointer;
+      transition: background .12s ease, transform .05s ease;
+    }
+
+    button:hover { background: #e6e6e6; }
+    button:active { transform: translateY(1px); }
+
+    .mode-btn {
+      font-size: 1.05rem;
+      padding: 5px 14px;
+    }
+
+    .mode-active {
+      background: #000;
+      color: #fff;
+    }
+
+    .primary-btn {
+      font-size: 1.25rem;
+      padding: 6px 20px;
+      min-width: 110px;
+    }
+
+    .mod-btn {
+      font-size: 1.05rem;
+      padding: 5px 8px;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <div id="header">
+    <img id="logo"
+         src="https://203collectibles.com/cdn/shop/files/IMG_1117_370x480.png?v=1764891037"
+         alt="Logo" />
+
+    <div id="leagueTitle">Pokémon League</div>
+    <div class="divider"></div>
+  </div>
+
+  <!-- CENTERED TIMER -->
+  <div id="timerBox">
+    <img id="pokeballIcon"
+         src="https://upload.wikimedia.org/wikipedia/commons/thumb/5/53/Pok%C3%A9_Ball_icon.svg/1026px-Pok%C3%A9_Ball_icon.svg.png"
+         alt="Poké Ball" />
+
+    <div id="timer">30:00</div>
+    <div id="message">Players you may begin!</div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div id="controlsPanel">
+
+    <div id="modeControls">
+      <button id="modeCasual" class="mode-btn mode-active">Casual / Challenge</button>
+      <button id="modeCup" class="mode-btn">Cup</button>
+    </div>
+
+    <div id="mainControls">
+      <button id="startBtn" class="primary-btn">Start</button>
+      <button id="pauseBtn" class="primary-btn">Pause</button>
+      <button id="resetBtn" class="primary-btn">Reset</button>
+    </div>
+
+    <div id="modifierSection">
+      <div id="modifierLabel">Adjust time</div>
+
+      <div id="modifierControls">
+        <button id="add10MinBtn" class="mod-btn">+10m</button>
+        <button id="addMinuteBtn" class="mod-btn">+1m</button>
+        <button id="add30SecBtn" class="mod-btn">+30s</button>
+
+        <button id="sub10MinBtn" class="mod-btn">-10m</button>
+        <button id="subMinuteBtn" class="mod-btn">-1m</button>
+        <button id="sub30SecBtn" class="mod-btn">-30s</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- SCRIPT (unchanged logic) -->
+  <script>
+    const MODES = { CASUAL: "casual", CUP: "cup" };
+    let currentMode = MODES.CASUAL;
+
+    function getModeStartSeconds() {
+      return currentMode === MODES.CUP ? 50 * 60 : 30 * 60;
+    }
+
+    let initialSeconds = getModeStartSeconds();
+    let remainingSeconds = initialSeconds;
+    let intervalId = null;
+    let isRunning = false;
+
+    let flashInterval = null;
+    let flashCount = 0;
+
+    const timerEl = document.getElementById("timer");
+    const messageEl = document.getElementById("message");
+
+    const modeCasualBtn = document.getElementById("modeCasual");
+    const modeCupBtn = document.getElementById("modeCup");
+
+    function formatTime(s) {
+      const m = Math.floor(s / 60);
+      const c = s % 60;
+      return `${String(m).padStart(2,"0")}:${String(c).padStart(2,"0")}`;
+    }
+
+    function stopTimeFlash() {
+      if (flashInterval) clearInterval(flashInterval);
+      flashInterval = null;
+      flashCount = 0;
+      timerEl.style.opacity = 1;
+    }
+
+    function startTimeFlash() {
+      stopTimeFlash();
+      flashCount = 0;
+
+      flashInterval = setInterval(() => {
+        flashCount++;
+        timerEl.style.opacity = timerEl.style.opacity === "0" ? "1" : "0";
+        if (flashCount >= 10) stopTimeFlash();
+      }, 400);
+    }
+
+    function updateMessageVisibility() {
+      const start = getModeStartSeconds();
+      const upper = start - 1;
+      const lower = start - 10;
+
+      messageEl.style.opacity =
+        remainingSeconds <= upper && remainingSeconds >= lower ? 1 : 0;
+    }
+
+    function updateDisplay() {
+
+      if (remainingSeconds === 0) {
+        timerEl.textContent = "TIME!";
+        timerEl.style.color = "#c62828";
+        updateMessageVisibility();
+        startTimeFlash();
+        return;
+      }
+
+      stopTimeFlash();
+      timerEl.textContent = formatTime(remainingSeconds);
+
+      if (!isRunning) {
+        timerEl.style.color = "#000";
+      } else {
+        if (remainingSeconds <= 20) {
+          timerEl.style.color = "#ff8c00";
+        } else {
+          const start = getModeStartSeconds();
+          const upper = start;
+          const lower = start - 9;
+
+          timerEl.style.color =
+            remainingSeconds <= upper && remainingSeconds >= lower
+              ? "#2e7d32"
+              : "#000";
+        }
+      }
+
+      updateMessageVisibility();
+    }
+
+    function tick() {
+      if (remainingSeconds > 0) {
+        remainingSeconds--;
+        if (remainingSeconds === 0) {
+          isRunning = false;
+          clearInterval(intervalId);
+          intervalId = null;
+        }
+        updateDisplay();
+      }
+    }
+
+    function startTimer() {
+      if (intervalId) return;
+      isRunning = true;
+      updateDisplay();
+      intervalId = setInterval(tick, 1000);
+    }
+
+    function pauseTimer() {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = null;
+      isRunning = false;
+      updateDisplay();
+    }
+
+    function resetTimer() {
+      if (intervalId) clearInterval(intervalId);
+      intervalId = null;
+
+      stopTimeFlash();
+      isRunning = false;
+
+      initialSeconds = getModeStartSeconds();
+      remainingSeconds = initialSeconds;
+
+      timerEl.style.color = "#000";
+      timerEl.textContent = formatTime(remainingSeconds);
+      updateMessageVisibility();
+    }
+
+    function addSeconds(n) {
+      remainingSeconds = Math.max(0, remainingSeconds + n);
+      updateDisplay();
+    }
+
+    function setMode(mode) {
+      if (currentMode === mode) return;
+
+      currentMode = mode;
+
+      modeCasualBtn.classList.toggle("mode-active", mode === MODES.CASUAL);
+      modeCupBtn.classList.toggle("mode-active", mode === MODES.CUP);
+
+      resetTimer();
+    }
+
+    document.getElementById("startBtn").addEventListener("click", startTimer);
+    document.getElementById("pauseBtn").addEventListener("click", pauseTimer);
+    document.getElementById("resetBtn").addEventListener("click", resetTimer);
+
+    document.getElementById("add10MinBtn").addEventListener("click", () => addSeconds(600));
+    document.getElementById("addMinuteBtn").addEventListener("click", () => addSeconds(60));
+    document.getElementById("add30SecBtn").addEventListener("click", () => addSeconds(30));
+
+    document.getElementById("sub10MinBtn").addEventListener("click", () => addSeconds(-600));
+    document.getElementById("subMinuteBtn").addEventListener("click", () => addSeconds(-60));
+    document.getElementById("sub30SecBtn").addEventListener("click", () => addSeconds(-30));
+
+    modeCasualBtn.addEventListener("click", () => setMode(MODES.CASUAL));
+    modeCupBtn.addEventListener("click", () => setMode(MODES.CUP));
+
+    updateDisplay();
+  </script>
+</body>
+</html>
